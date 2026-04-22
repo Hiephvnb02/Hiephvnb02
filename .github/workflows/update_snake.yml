@@ -1,0 +1,35 @@
+name: Generate Snake
+
+on:
+  schedule:
+    # Chạy tự động mỗi 24 giờ (vào lúc 00:00 UTC)
+    - cron: "0 0 * * *"
+  # Cho phép chạy thủ công khi bạn muốn kiểm tra ngay
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Bước 1: Checkout repo
+      - uses: actions/checkout@v3
+
+      # Bước 2: Chạy bot vẽ rắn
+      - uses: Platane/snk@v3
+        with:
+          # Thay tên người dùng của bạn vào đây
+          github_user_name: Hiephvnb02
+          # Đường dẫn lưu file ảnh chú rắn (svg)
+          outputs: github-contribution-grid-snake.svg
+
+      # Bước 3: Commit file ảnh chú rắn trở lại repo
+      - name: Deploy to GitHub Pages
+        uses: crazy-max/github-action-github-pages@v3
+        with:
+          target_branch: main # Tên branch chính của bạn (main hoặc master)
+          build_dir: .
+          fqdn: # Để trống
+          keep_history: true
+          allow_empty_commit: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Dùng token có sẵn của GitHub
