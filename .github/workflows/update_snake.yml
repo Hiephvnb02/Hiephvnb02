@@ -5,7 +5,6 @@ on:
     # Chạy mỗi 24 giờ
     - cron: "0 0 * * *"
   workflow_dispatch:
-  # Chạy mỗi khi bạn push code mới lên branch main
   push:
     branches:
     - main
@@ -16,12 +15,16 @@ jobs:
     permissions:
       contents: write
     
+    # Ép hệ thống chạy trên môi trường mới nhất năm 2026
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
-      # Bước 1: Checkout repo
+      # Nâng cấp lên v4 (bản ổn định nhất hiện tại)
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Bước 2: Chạy bot vẽ rắn (phiên bản mới nhất)
+      # Nâng cấp lên v3 của con rắn (hỗ trợ Node mới)
       - name: Generate Snake
         uses: Platane/snk@v3
         with:
@@ -30,15 +33,15 @@ jobs:
             dist/github-contribution-grid-snake.svg
             dist/github-contribution-grid-snake-dark.svg?palette=github-dark
 
-      # Bước 3: Đẩy file ảnh lên branch output (Cách này sạch sẽ và ít lỗi hơn)
+      # Dùng lệnh Shell thuần túy để đẩy code (bất tử, không lo lỗi thời)
       - name: Push to Output Branch
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan output
+          git checkout --orphan output || git checkout output
           git rm -rf .
           cp dist/github-contribution-grid-snake.svg .
           cp dist/github-contribution-grid-snake-dark.svg .
           git add .
-          git commit -m "Update snake animation"
+          git commit -m "Update snake animation [skip ci]" || echo "No changes to commit"
           git push -f origin output
