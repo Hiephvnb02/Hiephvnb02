@@ -2,34 +2,39 @@ name: Generate Snake
 
 on:
   schedule:
-    # Chạy tự động mỗi 24 giờ (vào lúc 00:00 UTC)
+    # Chạy mỗi 24 giờ
     - cron: "0 0 * * *"
-  # Cho phép chạy thủ công khi bạn muốn kiểm tra ngay
   workflow_dispatch:
+  # Chạy mỗi khi bạn push code mới lên branch main
+  push:
+    branches:
+    - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
     steps:
       # Bước 1: Checkout repo
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # Bước 2: Chạy bot vẽ rắn
-      - uses: Platane/snk@v3
+      # Bước 2: Chạy bot vẽ rắn (phiên bản mới nhất)
+      - name: Generate Snake
+        uses: Platane/snk@v3
         with:
-          # Thay tên người dùng của bạn vào đây
           github_user_name: Hiephvnb02
-          # Đường dẫn lưu file ảnh chú rắn (svg)
-          outputs: github-contribution-grid-snake.svg
+          outputs: |
+            dist/github-contribution-grid-snake.svg
+            dist/github-contribution-grid-snake-dark.svg?palette=github-dark
 
-      # Bước 3: Commit file ảnh chú rắn trở lại repo
-      - name: Deploy to GitHub Pages
-        uses: crazy-max/github-action-github-pages@v3
+      # Bước 3: Đẩy file ảnh lên branch output (Cách này sạch sẽ và ít lỗi hơn)
+      - name: Push Snake to Output Branch
+        uses: crazy-max/github-action-github-pages@v4
         with:
-          target_branch: main # Tên branch chính của bạn (main hoặc master)
-          build_dir: .
-          fqdn: # Để trống
-          keep_history: true
-          allow_empty_commit: true
+          target_branch: output
+          build_dir: dist
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Dùng token có sẵn của GitHub
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
