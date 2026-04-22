@@ -2,7 +2,7 @@ name: Generate Snake
 
 on:
   schedule:
-    # Chạy mỗi 24 giờ
+    # Chạy tự động mỗi 24 giờ
     - cron: "0 0 * * *"
   workflow_dispatch:
   push:
@@ -15,16 +15,18 @@ jobs:
     permissions:
       contents: write
     
-    # Ép hệ thống chạy trên môi trường mới nhất năm 2026
+    # Nâng cấp môi trường lên Node 24 mới nhất năm 2026
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
-      # Nâng cấp lên v4 (bản ổn định nhất hiện tại)
+      # Lấy mã nguồn (v4 là bản mới nhất hỗ trợ Node 24)
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # Nâng cấp lên v3 của con rắn (hỗ trợ Node mới)
+      # Tạo ảnh con rắn bò
       - name: Generate Snake
         uses: Platane/snk@v3
         with:
@@ -33,15 +35,46 @@ jobs:
             dist/github-contribution-grid-snake.svg
             dist/github-contribution-grid-snake-dark.svg?palette=github-dark
 
-      # Dùng lệnh Shell thuần túy để đẩy code (bất tử, không lo lỗi thời)
-      - name: Push to Output Branch
+      # Logic xử lý Version và đẩy lên nhánh output
+      - name: Push to Output Branch with Semantic Versioning
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 1. Tìm phiên bản cũ từ commit gần nhất của nhánh output
+          git fetch origin output || true
+          LAST_MSG=$(git log origin/output -1 --pretty=%B 2>/dev/null || echo "v1.0.0")
+          VERSION=$(echo $LAST_MSG | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "1.0.0")
+          
+          # 2. Tách số X.Y.Z
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+          
+          # 3. Logic nhảy số thông minh: 1.0.9 -> 1.1.0
+          if [ $PATCH -ge 9 ]; then
+            NEW_PATCH=0
+            NEW_MINOR=$((MINOR + 1))
+            NEW_MAJOR=$MAJOR
+          else
+            NEW_PATCH=$((PATCH + 1))
+            NEW_MINOR=$MINOR
+            NEW_MAJOR=$MAJOR
+          fi
+          
+          # Nếu Minor vượt quá 9, tăng Major (tùy chọn)
+          if [ $NEW_MINOR -gt 9 ]; then
+            NEW_MINOR=0
+            NEW_MAJOR=$((MAJOR + 1))
+          fi
+          
+          NEW_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
+          
+          # 4. Triển khai đẩy ảnh lên nhánh riêng
           git checkout --orphan output || git checkout output
           git rm -rf .
           cp dist/github-contribution-grid-snake.svg .
           cp dist/github-contribution-grid-snake-dark.svg .
           git add .
-          git commit -m "Update snake animation [skip ci]" || echo "No changes to commit"
+          git commit -m "Update snake animation v$NEW_VERSION [skip ci]" || echo "No changes"
           git push -f origin output
