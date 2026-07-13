@@ -1,4 +1,4 @@
-# Hi there! I'm Hiep Dam Dang 🚀 👋
+# Hi there! I'm Hiep 🚀 👋
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=00b4d8&height=150&section=header&text=Hiep%20Dam%20Dang&fontSize=50&animation=fadeIn" />
